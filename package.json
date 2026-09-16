@@ -1,0 +1,29 @@
+{
+  "name": "tab-to-cal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "eval": "tsx scripts/eval.ts",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.0",
+    "@types/node": "^22.20.3",
+    "linkedom": "^0.18.13",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
+    "wxt": "^0.21.4"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "zod": "^4.6.5"
+  }
+}

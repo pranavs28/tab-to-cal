@@ -1,0 +1,9 @@
+{
+  "events": [
+    { "title": "Registration & Coffee", "start": { "date": "2026-XX-XX", "time": "09:00", "timeZone": "America/Los_Angeles" } },
+    { "title": "Keynote: The Future of Tooling", "start": { "date": "2026-XX-XX", "time": "09:30", "timeZone": "America/Los_Angeles" } },
+    { "title": "Workshop: Building Reliable Agents", "start": { "date": "2026-XX-XX", "time": "11:00", "timeZone": "America/Los_Angeles" } },
+    { "title": "Panel: Open Source Sustainability", "start": { "date": "2026-XX-XX", "time": "14:00", "timeZone": "America/Los_Angeles" } },
+    { "title": "Networking Reception", "start": { "date": "2026-XX-XX", "time": "16:00", "timeZone": "America/Los_Angeles" } }
+  ]
+}

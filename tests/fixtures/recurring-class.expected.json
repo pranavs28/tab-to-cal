@@ -1,0 +1,11 @@
+{
+  "events": [
+    {
+      "title": "Beginner Pottery — Fall Session",
+      "start": { "date": "2026-09-23", "time": "18:30", "timeZone": "America/Chicago" },
+      "end": { "date": "2026-09-23", "time": "20:30", "timeZone": "America/Chicago" },
+      "location": "Clay & Fire Studio, 88 Kiln Rd, Austin, TX",
+      "recurrence": "FREQ=WEEKLY;BYDAY=WE;UNTIL=20261111"
+    }
+  ]
+}

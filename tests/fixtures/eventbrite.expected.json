@@ -1,0 +1,10 @@
+{
+  "events": [
+    {
+      "title": "Chicago Indie Game Night",
+      "start": { "date": "2026-10-02", "time": "19:00", "timeZone": "America/Chicago" },
+      "end": { "date": "2026-10-02", "time": "22:00", "timeZone": "America/Chicago" },
+      "location": "The Workshop, 1234 W Fulton St, Chicago, IL"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "events": [
+    { "title": "Venue walkthrough", "start": { "date": "2026-10-03", "time": "10:00" }, "location": "Riverside Hall" },
+    { "title": "Offsite", "start": { "date": "2026-11-12", "time": null }, "end": { "date": "2026-11-13", "time": null }, "location": "Riverside Hall, Springfield" },
+    { "title": "Planning sync", "start": { "date": "2026-10-06", "time": "09:00" }, "recurrence": "FREQ=WEEKLY;BYDAY=TU;UNTIL=20261031" }
+  ]
+}
