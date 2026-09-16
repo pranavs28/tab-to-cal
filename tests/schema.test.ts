@@ -29,8 +29,15 @@ describe('parseExtraction', () => {
     if (!result.ok) expect(result.error.length).toBeGreaterThan(0);
   });
 
-  it('rejects a bad time format', () => {
-    const bad = event({ start: { ...moment('2026-09-16', '6:00 PM'), timeZoneInferred: false } });
+  it('normalizes a 12h time instead of rejecting it', () => {
+    const withAmPm = event({ start: { ...moment('2026-09-16', '6:00 PM'), timeZoneInferred: false } });
+    const result = parseExtraction(JSON.stringify({ events: [withAmPm] }));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.events[0]!.start.time).toBe('18:00');
+  });
+
+  it('still rejects genuinely unparseable date/time text', () => {
+    const bad = event({ start: { ...moment('sometime soon', 'later'), timeZoneInferred: false } });
     const result = parseExtraction(JSON.stringify({ events: [bad] }));
     expect(result.ok).toBe(false);
   });

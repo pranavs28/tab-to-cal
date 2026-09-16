@@ -16,7 +16,10 @@ export async function runExtraction(capture: Capture, browserTimeZone: string): 
 
   await putResult({ status: 'pending', key, url: capture.url, title: capture.title, startedAt: Date.now() });
 
+  console.log(`tab-to-cal: captured ${capture.text.length} chars via "${capture.source}" from ${capture.url}`);
+
   try {
+    const t0 = performance.now();
     const events = await extractEvents({
       apiKey: settings.apiKey,
       model: settings.model,
@@ -27,6 +30,7 @@ export async function runExtraction(capture: Capture, browserTimeZone: string): 
       now: new Date(),
       browserTimeZone,
     });
+    console.log(`tab-to-cal: extraction total ${Math.round(performance.now() - t0)}ms, ${events.length} event(s)`);
 
     const gcalUrls = events.map((event) =>
       buildGcalUrl(event, {

@@ -1,3 +1,4 @@
+import { normalizeExtractionPayload } from '../normalize';
 import { extractionJsonSchema, extractionSchema, type CalendarEvent } from '../schema';
 import { SYSTEM_PROMPT, buildUserMessage, type PromptContext } from './prompt';
 
@@ -42,11 +43,17 @@ export async function extractEvents(options: ExtractOptions): Promise<CalendarEv
     { role: 'user', content: buildUserMessage(options) },
   ];
 
+  const referenceYear = options.now.getFullYear();
+
+  const t0 = performance.now();
   const first = await complete(options, messages);
-  const firstResult = parseExtraction(first);
+  console.log(`tab-to-cal: first LLM call took ${Math.round(performance.now() - t0)}ms (model ${options.model})`);
+  const firstResult = parseExtraction(first, referenceYear);
   if (firstResult.ok) return firstResult.events;
 
-  // One repair attempt with the validation error fed back.
+  // One repair attempt with the validation error fed back. Should be rare now
+  // that parseExtraction normalizes common alternate date/time formats first.
+  console.warn('tab-to-cal: first response failed validation, retrying:', firstResult.error);
   messages.push(
     { role: 'assistant', content: first },
     {
@@ -54,13 +61,16 @@ export async function extractEvents(options: ExtractOptions): Promise<CalendarEv
       content: `That response was invalid: ${firstResult.error}. Reply again with only JSON matching the schema.`,
     },
   );
-  const retryResult = parseExtraction(await complete(options, messages));
+  const t1 = performance.now();
+  const retryResult = parseExtraction(await complete(options, messages), referenceYear);
+  console.log(`tab-to-cal: retry LLM call took ${Math.round(performance.now() - t1)}ms`);
   if (retryResult.ok) return retryResult.events;
   throw new ExtractError('invalid_output', 'The model returned unusable output. Try again or pick another model.');
 }
 
 export function parseExtraction(
   content: string,
+  referenceYear = new Date().getFullYear(),
 ): { ok: true; events: CalendarEvent[] } | { ok: false; error: string } {
   const json = content
     .trim()
@@ -72,7 +82,7 @@ export function parseExtraction(
   } catch {
     return { ok: false, error: 'not valid JSON' };
   }
-  const result = extractionSchema.safeParse(data);
+  const result = extractionSchema.safeParse(normalizeExtractionPayload(data, referenceYear));
   if (!result.success) {
     return { ok: false, error: result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
   }
