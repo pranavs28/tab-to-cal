@@ -100,29 +100,31 @@ function renderDone(result: Extract<RunResult, { status: 'done' }>, onRetry: () 
   renderChecklist(result, onRetry);
 }
 
-async function runFresh() {
+async function runFresh(tabId: number) {
   renderLoading();
-  const response = await send({ type: 'capture-and-extract', browserTimeZone });
+  const response = await send({ type: 'capture-and-extract', tabId, browserTimeZone });
   if (!response?.ok) {
-    renderError(response?.message ?? 'Something went wrong. Please try again.', runFresh);
+    renderError(response?.message ?? 'Something went wrong. Please try again.', () => runFresh(tabId));
     return;
   }
   const { result } = response;
-  if (result.status === 'error') return renderError(result.message, runFresh);
+  if (result.status === 'error') return renderError(result.message, () => runFresh(tabId));
   if (result.status === 'done') {
     if (result.events.length === 1) chrome.tabs.create({ url: result.gcalUrls[0] });
-    renderDone(result, runFresh, true);
+    renderDone(result, () => runFresh(tabId), true);
   }
 }
 
 async function init() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url) return renderError('No page to read.', init);
+  if (!tab?.id || !tab.url) return renderError('No page to read.', init);
+  const tabId = tab.id;
+  const retry = () => runFresh(tabId);
 
   const { result } = await send<{ result?: RunResult }>({ type: 'get-latest-for-url', url: tab.url });
-  if (!result || result.status === 'pending') return runFresh();
-  if (result.status === 'error') return renderError(result.message, runFresh);
-  renderDone(result, runFresh, false);
+  if (!result || result.status === 'pending') return retry();
+  if (result.status === 'error') return renderError(result.message, retry);
+  renderDone(result, retry, false);
 }
 
 init();

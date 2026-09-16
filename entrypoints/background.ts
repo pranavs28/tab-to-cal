@@ -58,8 +58,16 @@ export default defineBackground(() => {
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === 'capture-and-extract' && sender.tab?.id) {
-      captureTab(sender.tab.id, sender.tab.url ?? '')
+    // A message from the popup has no sender.tab (that's only set for
+    // messages from a content script running in a tab), so the popup sends
+    // its own resolved tabId instead.
+    if (message?.type === 'capture-and-extract') {
+      const tabId = message.tabId ?? sender.tab?.id;
+      if (!tabId) {
+        sendResponse({ ok: false, message: 'Could not find the current tab.' });
+        return true;
+      }
+      captureTab(tabId, '')
         .then((capture) => runExtraction(capture, message.browserTimeZone))
         .then((outcome) => sendResponse({ ok: true, ...outcome }))
         .catch((error) => sendResponse({ ok: false, message: error?.message ?? 'Unknown error' }));

@@ -48,7 +48,11 @@ export async function runExtraction(capture: Capture, browserTimeZone: string): 
     await putResult(result);
     return { result, gcalUrls };
   } catch (error) {
-    const message = error instanceof ExtractError ? error.message : 'Something went wrong. Please try again.';
+    console.error('tab-to-cal: extraction failed', error);
+    const message =
+      error instanceof ExtractError
+        ? error.message
+        : `Something went wrong: ${error instanceof Error ? error.message : String(error)}`;
     const result: RunResult = { status: 'error', key, url: capture.url, title: capture.title, finishedAt: Date.now(), message };
     await putResult(result);
     return { result, gcalUrls: [] };
