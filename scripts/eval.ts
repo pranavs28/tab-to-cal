@@ -1,27 +1,48 @@
 /**
- * Manual live evaluation against real OpenRouter models. Not run in CI or by
- * `npm test` — it spends real requests against the free-tier daily quota.
+ * Manual live evaluation against a real provider. Not run in CI or by
+ * `npm test` — it spends real requests / quota.
  *
- * Usage: OPENROUTER_API_KEY=sk-... npm run eval [-- --model=some/model:free]
+ * Usage:
+ *   OPENROUTER_API_KEY=sk-... npm run eval [-- --provider=openrouter --model=some/model:free]
+ *   OPENAI_API_KEY=sk-...     npm run eval -- --provider=openai --model=gpt-5.6-luna
+ *   ANTHROPIC_API_KEY=sk-...  npm run eval -- --provider=anthropic --model=claude-haiku-4-5-20251001
+ *   GEMINI_API_KEY=...        npm run eval -- --provider=gemini --model=gemini-3.5-flash-lite
  */
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { extractEvents } from '../src/llm/openrouter';
+import { extractEvents } from '../src/llm/extract';
+import { COMPLETE_FNS, PROVIDER_INFO, PROVIDERS, type Provider } from '../src/llm/providers';
 import { buildGcalUrl } from '../src/gcal';
 import { resolveTimes } from '../src/time';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixturesDir = path.join(__dirname, '../tests/fixtures');
 
-const apiKey = process.env.OPENROUTER_API_KEY;
+function argValue(flag: string): string | undefined {
+  return process.argv.find((a) => a.startsWith(`--${flag}=`))?.slice(flag.length + 3);
+}
+
+const providerArg = (argValue('provider') as Provider | undefined) ?? 'openrouter';
+if (!PROVIDERS.includes(providerArg)) {
+  console.error(`Unknown provider "${providerArg}". Choose one of: ${PROVIDERS.join(', ')}`);
+  process.exit(1);
+}
+const provider: Provider = providerArg;
+
+const ENV_KEY: Record<Provider, string> = {
+  openrouter: 'OPENROUTER_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
+  gemini: 'GEMINI_API_KEY',
+};
+const apiKey = process.env[ENV_KEY[provider]];
 if (!apiKey) {
-  console.error('Set OPENROUTER_API_KEY to run the live eval.');
+  console.error(`Set ${ENV_KEY[provider]} to run the live eval against ${PROVIDER_INFO[provider].name}.`);
   process.exit(1);
 }
 
-const modelArg = process.argv.find((a) => a.startsWith('--model='));
-const model = modelArg?.slice('--model='.length) ?? 'nvidia/nemotron-3-super-120b-a12b:free';
+const model = argValue('model') ?? PROVIDER_INFO[provider].defaultModel;
 
 interface ExpectedEvent {
   title: string;
@@ -44,16 +65,20 @@ async function evalFixture(fileName: string) {
 
   console.log(`\n=== ${base} (expecting ${expected.events.length} event(s)) ===`);
 
-  const events = await extractEvents({
-    apiKey: apiKey!,
-    model,
-    fallbackModels: [],
-    text,
-    pageTitle: base,
-    pageUrl: `https://example.com/${base}`,
-    now: new Date('2026-09-16T00:00:00Z'),
-    browserTimeZone: 'America/Chicago',
-  });
+  const events = await extractEvents(
+    {
+      provider,
+      apiKey: apiKey!,
+      model,
+      fallbackModels: [],
+      text,
+      pageTitle: base,
+      pageUrl: `https://example.com/${base}`,
+      now: new Date('2026-09-16T00:00:00Z'),
+      browserTimeZone: 'America/Chicago',
+    },
+    COMPLETE_FNS,
+  );
 
   console.log(`Got ${events.length} event(s):`);
   let matched = 0;
@@ -79,6 +104,7 @@ async function evalFixture(fileName: string) {
 }
 
 async function main() {
+  console.log(`Provider: ${PROVIDER_INFO[provider].name}, model: ${model}`);
   const files = (await readdir(fixturesDir)).filter((f) => f.endsWith('.txt'));
   const results = [];
   for (const file of files) {

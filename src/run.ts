@@ -1,7 +1,9 @@
 import { buildGcalUrl } from './gcal';
 import { putResult, resultKey, type RunResult } from './history';
-import { extractEvents, ExtractError } from './llm/openrouter';
-import { getSettings } from './settings';
+import { ExtractError } from './llm/errors';
+import { extractEvents } from './llm/extract';
+import { COMPLETE_FNS } from './llm/providers';
+import { activeProviderSettings, getSettings } from './settings';
 import type { Capture } from './capture';
 
 export interface RunOutcome {
@@ -13,6 +15,7 @@ export interface RunOutcome {
 export async function runExtraction(capture: Capture, browserTimeZone: string): Promise<RunOutcome> {
   const key = await resultKey(capture.url, capture.text);
   const settings = await getSettings();
+  const provider = activeProviderSettings(settings);
 
   await putResult({ status: 'pending', key, url: capture.url, title: capture.title, startedAt: Date.now() });
 
@@ -20,16 +23,20 @@ export async function runExtraction(capture: Capture, browserTimeZone: string): 
 
   try {
     const t0 = performance.now();
-    const events = await extractEvents({
-      apiKey: settings.apiKey,
-      model: settings.model,
-      fallbackModels: settings.fallbackModels,
-      text: capture.text,
-      pageTitle: capture.title,
-      pageUrl: capture.url,
-      now: new Date(),
-      browserTimeZone,
-    });
+    const events = await extractEvents(
+      {
+        provider: settings.provider,
+        apiKey: provider.apiKey,
+        model: provider.model,
+        fallbackModels: provider.fallbackModels,
+        text: capture.text,
+        pageTitle: capture.title,
+        pageUrl: capture.url,
+        now: new Date(),
+        browserTimeZone,
+      },
+      COMPLETE_FNS,
+    );
     console.log(`tab-to-cal: extraction total ${Math.round(performance.now() - t0)}ms, ${events.length} event(s)`);
 
     const gcalUrls = events.map((event) =>

@@ -7,6 +7,9 @@ export default defineConfig({
     permissions: ['activeTab', 'scripting', 'contextMenus', 'storage'],
     host_permissions: [
       'https://openrouter.ai/*',
+      'https://api.openai.com/*',
+      'https://api.anthropic.com/*',
+      'https://generativelanguage.googleapis.com/*',
       'https://docs.google.com/*',
       'https://*.googleusercontent.com/*',
     ],

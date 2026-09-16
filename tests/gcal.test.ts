@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DESCRIPTION_MAX_CHARS, buildDetails, buildGcalUrl } from '../src/gcal';
+import { DESCRIPTION_MAX_CHARS, FOOTER_TEXT, buildDetails, buildGcalUrl } from '../src/gcal';
 import { event, moment } from './helpers';
 
 function params(url: string) {
@@ -44,21 +44,29 @@ describe('buildGcalUrl', () => {
     expect(p.get('authuser')).toBe('me@example.com');
   });
 
-  it('omits empty optional params', () => {
+  it('omits empty optional params other than details (which always carries the footer)', () => {
     const p = params(buildGcalUrl(event(), { fallbackTimeZone: 'UTC' }));
-    for (const key of ['details', 'location', 'recur', 'authuser']) expect(p.has(key)).toBe(false);
+    for (const key of ['location', 'recur', 'authuser']) expect(p.has(key)).toBe(false);
+    expect(p.get('details')).toBe(FOOTER_TEXT);
   });
 });
 
 describe('buildDetails', () => {
-  it('puts the source URL first', () => {
-    expect(buildDetails('Bring ID', 'https://example.com/e')).toBe('Source: https://example.com/e\n\nBring ID');
+  it('puts the source URL first and the footer last', () => {
+    expect(buildDetails('Bring ID', 'https://example.com/e')).toBe(
+      `Source: https://example.com/e\n\nBring ID\n\n${FOOTER_TEXT}`,
+    );
   });
 
-  it('caps long descriptions', () => {
+  it('includes just the footer when there is no description or source', () => {
+    expect(buildDetails(null)).toBe(FOOTER_TEXT);
+  });
+
+  it('caps overall length, truncating the description but keeping the footer intact', () => {
     const details = buildDetails('x'.repeat(5000), 'https://example.com');
-    expect(details.length).toBe(DESCRIPTION_MAX_CHARS);
+    expect(details.length).toBeLessThanOrEqual(DESCRIPTION_MAX_CHARS);
     expect(details.startsWith('Source: https://example.com')).toBe(true);
-    expect(details.endsWith('…')).toBe(true);
+    expect(details.endsWith(FOOTER_TEXT)).toBe(true);
+    expect(details).toContain('…');
   });
 });

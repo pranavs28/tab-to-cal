@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseExtraction } from '../src/llm/openrouter';
+import { parseExtraction } from '../src/llm/parse';
 import { event, moment } from './helpers';
 
 describe('parseExtraction', () => {
