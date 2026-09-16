@@ -1,5 +1,5 @@
 import type { Capture } from '../src/capture';
-import { latestResultForUrl } from '../src/history';
+import { latestResultForUrl, type RunResult } from '../src/history';
 import { runExtraction } from '../src/run';
 
 const CONTEXT_MENU_ID = 'tab-to-cal-selection';
@@ -20,6 +20,18 @@ async function setBadge(tabId: number, text: string, color: string) {
   await chrome.action.setBadgeBackgroundColor({ tabId, color });
 }
 
+/** For a single-event result, opens the Calendar tab right here in the
+ * background - not in the popup - so it happens even if the popup that
+ * triggered the run has since closed (switching tabs, clicking away, etc.
+ * all close it, but the extraction keeps running regardless). */
+async function autoOpenIfSingleEvent(result: RunResult): Promise<boolean> {
+  if (result.status === 'done' && result.events.length === 1) {
+    await chrome.tabs.create({ url: result.gcalUrls[0] });
+    return true;
+  }
+  return false;
+}
+
 /** Runs the pipeline for a tab and reflects the outcome as a badge, since the
  * context-menu trigger has no popup of its own to show progress or results in. */
 async function runForTab(tabId: number, url: string) {
@@ -30,8 +42,7 @@ async function runForTab(tabId: number, url: string) {
     if (result.status === 'error') {
       await setBadge(tabId, '!', '#c0392b');
     } else if (result.status === 'done' && result.events.length > 0) {
-      if (result.events.length === 1) {
-        await chrome.tabs.create({ url: result.gcalUrls[0] });
+      if (await autoOpenIfSingleEvent(result)) {
         await setBadge(tabId, '✓', '#2e7d32');
       } else {
         await setBadge(tabId, String(result.events.length), '#2e7d32');
@@ -69,7 +80,10 @@ export default defineBackground(() => {
       }
       captureTab(tabId, '')
         .then((capture) => runExtraction(capture, message.browserTimeZone))
-        .then((outcome) => sendResponse({ ok: true, ...outcome }))
+        .then(async (outcome) => {
+          const autoOpened = await autoOpenIfSingleEvent(outcome.result);
+          sendResponse({ ok: true, ...outcome, autoOpened });
+        })
         .catch((error) => sendResponse({ ok: false, message: error?.message ?? 'Unknown error' }));
       return true;
     }

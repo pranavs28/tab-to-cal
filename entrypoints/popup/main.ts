@@ -55,14 +55,17 @@ function renderChecklist(result: Extract<RunResult, { status: 'done' }>, onRetry
   const rows = result.events
     .map((event, i) => {
       const flagged = needsReview(event) ? ' <span class="warn" title="Time or timezone was guessed">⚠</span>' : '';
+      // The checkbox (for "Add selected") and the link (opens this one event
+      // immediately) are separate controls, not one nested in the other, so
+      // clicking the title doesn't just toggle the checkbox.
       return `
-        <label class="row">
+        <div class="row">
           <input type="checkbox" data-i="${i}" checked />
-          <span class="when">
+          <a class="when" href="${result.gcalUrls[i]}" target="_blank" rel="noopener" title="Open this event now">
             <div class="title">${escapeHtml(event.title)}</div>
             <div class="meta">${escapeHtml(describeWhen(event, browserTimeZone))}${flagged}</div>
-          </span>
-        </label>
+          </a>
+        </div>
       `;
     })
     .join('');
@@ -107,11 +110,13 @@ async function runFresh(tabId: number) {
     renderError(response?.message ?? 'Something went wrong. Please try again.', () => runFresh(tabId));
     return;
   }
-  const { result } = response;
+  const { result, autoOpened } = response;
   if (result.status === 'error') return renderError(result.message, () => runFresh(tabId));
   if (result.status === 'done') {
-    if (result.events.length === 1) chrome.tabs.create({ url: result.gcalUrls[0] });
-    renderDone(result, () => runFresh(tabId), true);
+    // The background worker already opened the tab for a single event (it
+    // runs the whole extraction itself, so this happens even if the popup
+    // closed before the response arrived) - just reflect that here.
+    renderDone(result, () => runFresh(tabId), Boolean(autoOpened));
   }
 }
 
