@@ -1,7 +1,13 @@
 import type { CalendarEvent } from '../schema';
 import { ExtractError, isRecoverableWithFallback } from './errors';
 import { parseExtraction } from './parse';
-import { PROVIDER_INFO, type CompleteFn, type Message, type Provider } from './providers/types';
+import {
+  PROVIDER_INFO,
+  SHARED_GEMINI_MODEL,
+  type CompleteFn,
+  type Message,
+  type Provider,
+} from './providers/types';
 import { buildUserMessage, SYSTEM_PROMPT, type PromptContext } from './prompt';
 
 export interface ExtractOptions extends PromptContext {
@@ -55,11 +61,18 @@ export async function extractEvents(
   completeFns: Record<Provider, CompleteFn>,
 ): Promise<CalendarEvent[]> {
   const providerName = PROVIDER_INFO[options.provider].name;
-  if (!options.apiKey.trim()) {
+  // Gemini alone has a no-signup default: an empty key means "use the
+  // shared free proxy" rather than a missing setup, and it's pinned to one
+  // model regardless of what's configured (the proxy only allows that model).
+  const usingSharedGemini = options.provider === 'gemini' && !options.apiKey.trim();
+
+  if (!usingSharedGemini && !options.apiKey.trim()) {
     throw new ExtractError('no_key', `Add your ${providerName} API key in the extension options.`);
   }
 
-  const models = [options.model, ...options.fallbackModels].map((m) => m.trim()).filter(Boolean);
+  const models = usingSharedGemini
+    ? [SHARED_GEMINI_MODEL]
+    : [options.model, ...options.fallbackModels].map((m) => m.trim()).filter(Boolean);
   if (models.length === 0) {
     throw new ExtractError('no_key', `Set a model for ${providerName} in the extension options.`);
   }

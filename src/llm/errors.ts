@@ -6,7 +6,10 @@ export type ExtractErrorCode =
   | 'model_unavailable'
   | 'invalid_output'
   | 'network'
-  | 'api';
+  | 'api'
+  // Specifically the shared, no-signup-required Gemini default (used when
+  // no personal key is set), distinct from `rate_limited` on a personal key.
+  | 'shared_quota_exhausted';
 
 export class ExtractError extends Error {
   constructor(

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { completeGemini } from '../../src/llm/providers/gemini';
+import { SHARED_GEMINI_PROXY_URL } from '../../src/llm/providers/types';
 
 const messages = [
   { role: 'system' as const, content: 'be terse' },
@@ -58,5 +59,41 @@ describe('completeGemini', () => {
       const fetchImpl = vi.fn(async () => jsonResponse({ error: { message: 'nope' } }, status));
       await expect(completeGemini({ apiKey: 'k', model: 'm', fetchImpl }, messages)).rejects.toMatchObject({ code });
     }
+  });
+
+  describe('shared proxy (no apiKey)', () => {
+    it('posts to the proxy with the model in the body and no x-goog-api-key header', async () => {
+      let capturedUrl = '';
+      let capturedHeaders: HeadersInit | undefined;
+      let captured: any;
+      const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        capturedUrl = String(url);
+        capturedHeaders = init?.headers;
+        captured = JSON.parse((init?.body as string) ?? '{}');
+        return jsonResponse({ candidates: [{ content: { parts: [{ text: '{"events":[]}' }] } }] });
+      });
+
+      const result = await completeGemini({ apiKey: '', model: 'gemini-3.5-flash-lite', fetchImpl }, messages);
+
+      expect(result).toBe('{"events":[]}');
+      expect(capturedUrl).toBe(SHARED_GEMINI_PROXY_URL);
+      expect((capturedHeaders as Record<string, string>)['x-goog-api-key']).toBeUndefined();
+      expect(captured.model).toBe('gemini-3.5-flash-lite');
+      expect(captured.contents).toBeDefined();
+    });
+
+    it('maps a 429 from the proxy to shared_quota_exhausted, not rate_limited', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({ error: { message: 'quota' } }, 429));
+      await expect(completeGemini({ apiKey: '', model: 'm', fetchImpl }, messages)).rejects.toMatchObject({
+        code: 'shared_quota_exhausted',
+      });
+    });
+
+    it('still maps other statuses normally on the shared path', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({ error: { message: 'nope' } }, 500));
+      await expect(completeGemini({ apiKey: '', model: 'm', fetchImpl }, messages)).rejects.toMatchObject({
+        code: 'api',
+      });
+    });
   });
 });
