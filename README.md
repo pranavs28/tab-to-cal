@@ -6,6 +6,9 @@ event" tab for each event found. No Google sign-in or OAuth — it opens
 `calendar.google.com`'s own event form, which uses whatever Google account
 you're already signed into in that tab.
 
+See [PRIVACY.md](PRIVACY.md) for what data this extension reads, where it
+goes, and what's stored locally.
+
 ## Setup
 
 ```sh
