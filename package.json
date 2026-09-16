@@ -1,7 +1,9 @@
 {
   "name": "tab-to-cal",
+  "description": "Turn the event details on any tab into Google Calendar events.",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "wxt",

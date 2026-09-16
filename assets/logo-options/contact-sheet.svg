@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 280" font-family="system-ui, sans-serif">
+  <rect width="940" height="280" fill="#f4f2ed"/>
+
+  <!-- A: 128px + 32px + 16px previews -->
+  <g transform="translate(40,20)">
+    <image href="a-calendar-check.png" width="128" height="128"/>
+    <image href="a-calendar-check.png" x="150" y="48" width="32" height="32"/>
+    <image href="a-calendar-check.png" x="196" y="56" width="16" height="16"/>
+    <text x="64" y="160" font-size="15" font-weight="600" fill="#1a1a1a" text-anchor="middle">A — Calendar + check</text>
+    <text x="64" y="180" font-size="11" fill="#5f6368" text-anchor="middle">(current)</text>
+  </g>
+
+  <!-- B -->
+  <g transform="translate(270,20)">
+    <image href="b-tab-into-cal.png" width="128" height="128"/>
+    <image href="b-tab-into-cal.png" x="150" y="48" width="32" height="32"/>
+    <image href="b-tab-into-cal.png" x="196" y="56" width="16" height="16"/>
+    <text x="64" y="160" font-size="15" font-weight="600" fill="#1a1a1a" text-anchor="middle">B — Tab into calendar</text>
+    <text x="64" y="180" font-size="11" fill="#5f6368" text-anchor="middle">literal "tab → cal"</text>
+  </g>
+
+  <!-- C -->
+  <g transform="translate(500,20)">
+    <image href="c-dogear-minimal.png" width="128" height="128"/>
+    <image href="c-dogear-minimal.png" x="150" y="48" width="32" height="32"/>
+    <image href="c-dogear-minimal.png" x="196" y="56" width="16" height="16"/>
+    <text x="64" y="160" font-size="15" font-weight="600" fill="#1a1a1a" text-anchor="middle">C — Dog-ear page</text>
+    <text x="64" y="180" font-size="11" fill="#5f6368" text-anchor="middle">minimal, single silhouette</text>
+  </g>
+
+  <!-- D -->
+  <g transform="translate(730,20)">
+    <image href="d-grid-arrow.png" width="128" height="128"/>
+    <image href="d-grid-arrow.png" x="150" y="48" width="32" height="32"/>
+    <image href="d-grid-arrow.png" x="196" y="56" width="16" height="16"/>
+    <text x="64" y="160" font-size="15" font-weight="600" fill="#1a1a1a" text-anchor="middle">D — Grid + arrow</text>
+    <text x="64" y="180" font-size="11" fill="#5f6368" text-anchor="middle">abstract, dark mode-y</text>
+  </g>
+
+  <text x="470" y="215" font-size="12" fill="#8a8f98" text-anchor="middle">Each shown at 128px, 32px, and 16px (actual toolbar size)</text>
+</svg>

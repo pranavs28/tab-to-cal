@@ -99,3 +99,14 @@ model, retries once with the validation error fed back if the response fails
 schema validation, and falls back through the configured fallback models on
 a retryable error (not on an auth/billing error, which won't be fixed by
 trying a different model on the same account).
+
+## Contributing
+
+Issues and PRs are welcome. Please run `npm test` and `npm run typecheck`
+before submitting, and keep new logic covered by unit tests — see
+`tests/` for the existing style (mocked `fetch`/`Response` for provider
+code, fixture-based for capture/extraction).
+
+## License
+
+[MIT](LICENSE)
