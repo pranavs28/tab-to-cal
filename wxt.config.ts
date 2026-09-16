@@ -16,9 +16,6 @@ export default defineConfig({
       'https://api.openai.com/*',
       'https://api.anthropic.com/*',
       'https://generativelanguage.googleapis.com/*',
-      // The shared no-signup Gemini proxy (src/llm/providers/types.ts:SHARED_GEMINI_PROXY_URL).
-      // Keep this in sync with that URL once the real Vercel domain is known.
-      'https://tab-to-cal-proxy.vercel.app/*',
       'https://docs.google.com/*',
       'https://*.googleusercontent.com/*',
     ],

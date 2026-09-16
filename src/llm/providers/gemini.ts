@@ -1,13 +1,12 @@
 import { extractionJsonSchema } from '../../schema';
 import { ExtractError } from '../errors';
 import { toGeminiSchema } from './gemini-schema';
-import { SHARED_GEMINI_PROXY_URL, type CompleteFn } from './types';
+import type { CompleteFn } from './types';
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const completeGemini: CompleteFn = async (options, messages) => {
   const fetchImpl = options.fetchImpl ?? fetch;
-  const usingSharedProxy = !options.apiKey.trim();
 
   const systemText = messages
     .filter((m) => m.role === 'system')
@@ -18,57 +17,42 @@ export const completeGemini: CompleteFn = async (options, messages) => {
     .filter((m) => m.role !== 'system')
     .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
 
-  const geminiBody = {
-    contents,
-    ...(systemText ? { systemInstruction: { parts: [{ text: systemText }] } } : {}),
-    generationConfig: {
-      temperature: 0,
-      responseMimeType: 'application/json',
-      responseSchema: toGeminiSchema(extractionJsonSchema),
-    },
-  };
-
-  // Direct call sends the real key and puts the model in the URL. The shared
-  // proxy holds its own key server-side, so the model goes in the body
-  // instead, and it's validated there against a small allowlist.
-  const endpoint = usingSharedProxy
-    ? SHARED_GEMINI_PROXY_URL
-    : `${GEMINI_ENDPOINT}/${encodeURIComponent(options.model)}:generateContent`;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (!usingSharedProxy) headers['x-goog-api-key'] = options.apiKey.trim();
-  const body = usingSharedProxy ? { model: options.model, ...geminiBody } : geminiBody;
+  const endpoint = `${GEMINI_ENDPOINT}/${encodeURIComponent(options.model)}:generateContent`;
 
   let response: Response;
   try {
-    response = await fetchImpl(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+    response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': options.apiKey.trim(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        ...(systemText ? { systemInstruction: { parts: [{ text: systemText }] } } : {}),
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: 'application/json',
+          responseSchema: toGeminiSchema(extractionJsonSchema),
+        },
+      }),
+    });
   } catch {
-    throw new ExtractError(
-      'network',
-      usingSharedProxy ? 'Could not reach the shared Gemini proxy. Check your connection.' : 'Could not reach Gemini. Check your connection.',
-    );
+    throw new ExtractError('network', 'Could not reach Gemini. Check your connection.');
   }
 
-  const responseBody = (await response.json().catch(() => null)) as {
+  const body = (await response.json().catch(() => null)) as {
     error?: { message?: string; code?: number };
     candidates?: { content?: { parts?: { text?: string }[] } }[];
   } | null;
 
-  if (!response.ok || responseBody?.error) {
-    throw toExtractError(response.status, responseBody?.error?.message, usingSharedProxy);
+  if (!response.ok || body?.error) {
+    throw toExtractError(response.status, body?.error?.message);
   }
 
-  const text = responseBody?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('');
+  const text = body?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('');
   if (!text) throw new ExtractError('invalid_output', 'The model returned an empty response. Try again.');
   return text;
 };
 
-function toExtractError(status: number, message = '', usingSharedProxy: boolean): ExtractError {
-  if (usingSharedProxy && status === 429) {
-    return new ExtractError(
-      'shared_quota_exhausted',
-      "We're experiencing high demand on the free shared tier right now. Try again in a bit, or add your own free Gemini API key in the options to skip this limit.",
-    );
-  }
+function toExtractError(status: number, message = ''): ExtractError {
   switch (status) {
     case 401:
     case 403:

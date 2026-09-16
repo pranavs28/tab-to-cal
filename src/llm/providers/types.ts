@@ -34,22 +34,12 @@ export const PROVIDER_INFO: Record<Provider, ProviderLabel> = {
   },
   gemini: {
     name: 'Gemini (Google)',
-    keyHint:
-      'Leave the key blank to use a shared free tier we host (rate-limited, best effort). ' +
-      'Add your own free Google AI Studio key to skip that limit.',
+    keyHint: 'Google AI Studio gives free-tier API keys for personal use.',
     keyUrl: 'https://aistudio.google.com/apikey',
     defaultModel: 'gemini-3.5-flash-lite',
-    modelHint: 'Any current Gemini model id. Ignored when no key is set (the shared tier uses one fixed model).',
+    modelHint: 'Any current Gemini model id.',
   },
 };
-
-/** The one model the shared, no-key-required Gemini default is pinned to.
- * Kept in sync with tab-to-cal-proxy's ALLOWED_MODELS. */
-export const SHARED_GEMINI_MODEL = 'gemini-3.5-flash-lite';
-
-/** Deployed Vercel URL for tab-to-cal-proxy's /api/extract. Update this
- * after deploying the proxy (see tab-to-cal-proxy/README.md). */
-export const SHARED_GEMINI_PROXY_URL = 'https://tab-to-cal-proxy.vercel.app/api/extract';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';

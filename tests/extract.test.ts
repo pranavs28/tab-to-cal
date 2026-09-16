@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { extractEvents } from '../src/llm/extract';
 import { ExtractError } from '../src/llm/errors';
 import type { CompleteFn, Provider } from '../src/llm/providers/types';
-import { SHARED_GEMINI_MODEL } from '../src/llm/providers/types';
 
 const ctx = {
   text: 'some page text',
@@ -26,25 +25,10 @@ describe('extractEvents', () => {
     ).rejects.toMatchObject({ code: 'no_key' });
   });
 
-  it('uses the shared Gemini model when Gemini has no key, ignoring configured model/fallbacks', async () => {
-    let capturedModel = '';
-    const gemini: CompleteFn = async (options) => {
-      capturedModel = options.model;
-      return '{"events":[]}';
-    };
-    const events = await extractEvents(
-      { ...ctx, provider: 'gemini', apiKey: '', model: 'ignored-model', fallbackModels: ['also-ignored'] },
-      fns({ gemini }),
-    );
-    expect(events).toEqual([]);
-    expect(capturedModel).toBe(SHARED_GEMINI_MODEL);
-  });
-
-  it('does not throw no_key for Gemini with no key', async () => {
-    const gemini: CompleteFn = async () => '{"events":[]}';
+  it('throws no_key for Gemini with no key, same as every other provider', async () => {
     await expect(
-      extractEvents({ ...ctx, provider: 'gemini', apiKey: '', model: 'x', fallbackModels: [] }, fns({ gemini })),
-    ).resolves.toEqual([]);
+      extractEvents({ ...ctx, provider: 'gemini', apiKey: '', model: 'x', fallbackModels: [] }, fns({})),
+    ).rejects.toMatchObject({ code: 'no_key' });
   });
 
   it('falls back to the next model on a recoverable error', async () => {
